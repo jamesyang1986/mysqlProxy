@@ -3,6 +3,7 @@ package com.qiezi.mysqlproxy.server;
 import com.qiezi.mysqlproxy.config.ServerConfig;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -24,11 +25,12 @@ public class MysqlServer {
         try {
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
             serverSocketChannel.configureBlocking(false);
+            serverSocketChannel.bind(new InetSocketAddress(serverConfig.getPort()));
             selector = Selector.open();
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
             while (true) {
-                selector.select(100);
+                selector.select(1000L);
                 Set<SelectionKey> keySet = selector.selectedKeys();
                 if (keySet == null || keySet.size() == 0)
                     continue;
@@ -47,17 +49,22 @@ public class MysqlServer {
                         socket.setReceiveBufferSize(4 * 1024);
                         socket.setKeepAlive(true);
                         socket.setSoTimeout(1000);
-                        client.register(selector, SelectionKey.OP_READ);
-
+                        FrontendConnection connection = FrontendConnectionFactory
+                                .makeConnection(client);
+                        connection.register(selector);
                     } else if (key != null && key.isReadable()) {
                         SocketChannel channel = (SocketChannel) key.channel();
-                        FrontendConnection connection = FrontendConnectionFactory
-                                .makeConnection(channel);
-                        connection.read();
+//                        FrontendConnection connection = FrontendConnectionFactory
+//                                .makeConnection(channel);
+//                        connection.read();
 
+                        FrontendConnection connection = (FrontendConnection) key.attachment();
+                        connection.read();
                     } else if (key != null && key.isWritable()) {
 
                     }
+
+                    keySet.clear();
                 }
             }
 
@@ -74,4 +81,13 @@ public class MysqlServer {
     }
 
 
+    public static void main(String[] args) {
+        ServerConfig config = new ServerConfig();
+        config.setListen("0.0.0.0");
+        config.setPort(3307);
+
+        MysqlServer server = new MysqlServer(config);
+        server.start();
+
+    }
 }
