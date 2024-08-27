@@ -2,6 +2,7 @@ package com.qiezi.mysqlproxy.server;
 
 import com.qiezi.mysqlproxy.protocol.Capabilities;
 import com.qiezi.mysqlproxy.protocol.PacketOutputProxyFactory;
+import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
 import com.qiezi.mysqlproxy.protocol.packet.HandshakePacket;
 import com.qiezi.mysqlproxy.utils.RandomUtil;
 import com.qiezi.mysqlproxy.utils.StreamUtil;
@@ -31,7 +32,7 @@ public class FrontendConnection {
         this.handler = new AuthHandler(this);
     }
 
-    public void register(Selector selector){
+    public void register(Selector selector) {
         try {
             SelectionKey key = this.channel.register(selector, SelectionKey.OP_READ);
             key.attach(this);
@@ -101,9 +102,8 @@ public class FrontendConnection {
 
 
         try {
-            hs.write(PacketOutputProxyFactory.createProxy(channel.socket()
-                    .getOutputStream()));
-        } catch (IOException e) {
+            hs.write(new PacketStreamOutputProxy(this));
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 

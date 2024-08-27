@@ -54,13 +54,10 @@ public class MysqlServer {
                         connection.register(selector);
                     } else if (key != null && key.isReadable()) {
                         SocketChannel channel = (SocketChannel) key.channel();
-//                        FrontendConnection connection = FrontendConnectionFactory
-//                                .makeConnection(channel);
-//                        connection.read();
-
                         FrontendConnection connection = (FrontendConnection) key.attachment();
                         connection.read();
                     } else if (key != null && key.isWritable()) {
+                        System.out.println("write");
 
                     }
 

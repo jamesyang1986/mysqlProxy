@@ -1,18 +1,35 @@
 package com.qiezi.mysqlproxy.protocol;
 
+import com.qiezi.mysqlproxy.server.FrontendConnection;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
-public abstract class PacketStreamOutputProxy extends PacketOutputProxyCommon {
+public class PacketStreamOutputProxy extends PacketOutputProxyCommon {
 
     protected OutputStream out;
 
-    protected ByteArrayOutputStream waitForCompressStream ;
+    protected ByteArrayOutputStream waitForCompressStream;
+
+    private static int DEFAULT_BUFF_SIZE = 256;
+
+    private FrontendConnection connection;
 
     public PacketStreamOutputProxy(OutputStream out) {
         this.out = out;
-        this.waitForCompressStream = new ByteArrayOutputStream();
+        this.waitForCompressStream = new ByteArrayOutputStream(DEFAULT_BUFF_SIZE);
+    }
+
+    public PacketStreamOutputProxy(FrontendConnection connection) {
+        this.connection = connection;
+        this.waitForCompressStream = new ByteArrayOutputStream(DEFAULT_BUFF_SIZE);
+    }
+
+    @Override
+    public FrontendConnection getConnection() {
+        return this.connection;
     }
 
     @Override
@@ -123,8 +140,27 @@ public abstract class PacketStreamOutputProxy extends PacketOutputProxyCommon {
     }
 
     @Override
+    public void write(byte[] src) {
+        try {
+            waitForCompressStream.write(src);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void write(byte[] src, int off, int len) {
+        try {
+            waitForCompressStream.write(src, off, len);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    @Override
     public void writeWithNull(byte[] src) {
-        write(src);
+//        write(src);
         waitForCompressStream.write((byte) 0);
     }
 
@@ -156,6 +192,29 @@ public abstract class PacketStreamOutputProxy extends PacketOutputProxyCommon {
     }
 
     @Override
+    public void checkWriteCapacity(int capacity) {
+
+    }
+
+    @Override
+    public void packetBegin() {
+
+    }
+
+    @Override
+    public void packetEnd() {
+        try {
+            if (this.connection != null) {
+                this.connection.getChannel().write(ByteBuffer.wrap(getData()));
+            } else if (out != null) {
+                out.write(getData());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public boolean avaliable() {
         /**
          * 对于流式输出，总假设可用
@@ -174,6 +233,14 @@ public abstract class PacketStreamOutputProxy extends PacketOutputProxyCommon {
             }
         } catch (IOException e) {
         }
+    }
+
+    @Override
+    public byte[] getData() {
+        if (waitForCompressStream != null) {
+            return waitForCompressStream.toByteArray();
+        }
+        return null;
     }
 }
 

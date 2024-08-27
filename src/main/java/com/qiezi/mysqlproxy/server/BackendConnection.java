@@ -3,6 +3,7 @@ package com.qiezi.mysqlproxy.server;
 import com.qiezi.mysqlproxy.model.EndPoint;
 import com.qiezi.mysqlproxy.protocol.Capabilities;
 import com.qiezi.mysqlproxy.protocol.PacketOutputProxyFactory;
+import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
 import com.qiezi.mysqlproxy.protocol.packet.*;
 import com.qiezi.mysqlproxy.utils.SecurityUtil;
 
@@ -74,7 +75,7 @@ public class BackendConnection {
             } catch (NoSuchAlgorithmException e) {
                 throw new IllegalArgumentException(e.getMessage());
             }
-            switch (bin.data[0]) {
+            switch (res.data[0]) {
                 case OkPacket.OK_HEADER:
                     afterSuccess();
                     break;
@@ -113,7 +114,7 @@ public class BackendConnection {
             System.arraycopy(restOfScramble, 0, authSeed, seed.length, restOfScramble.length);
             ap.password = SecurityUtil.scramble411(password, authSeed);
         }
-        ap.write(PacketOutputProxyFactory.createProxy(out));
+        ap.write(new PacketStreamOutputProxy(out));
         return receive();
     }
 
