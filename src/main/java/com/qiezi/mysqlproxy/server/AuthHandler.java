@@ -16,12 +16,10 @@ public class AuthHandler implements Handler {
     public void handleData(byte[] data) {
         AuthPacket authPacket = new AuthPacket();
         authPacket.read(data);
-        if (authPacket.user != null) {
-            try {
-                this.source.getChannel().write(ByteBuffer.wrap(AUTH_OK));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            this.source.getChannel().write(ByteBuffer.wrap(AUTH_OK));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         source.setHandler(new CommandHandler(source));
     }

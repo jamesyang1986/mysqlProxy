@@ -50,7 +50,6 @@ public class RawPacketStreamOutputProxy extends PacketStreamOutputProxy {
          * 对于直接outputstream发送的情形不做特殊处理
          */
         try {
-            out.write(getData());
             out.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);

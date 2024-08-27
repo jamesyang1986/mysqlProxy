@@ -45,22 +45,21 @@ public class MysqlServer {
                         client.configureBlocking(false);
                         Socket socket = client.socket();
                         socket.setTcpNoDelay(true);
-                        socket.setSendBufferSize(4 * 1024);
-                        socket.setReceiveBufferSize(4 * 1024);
+                        socket.setSendBufferSize(1024);
+                        socket.setReceiveBufferSize(1024);
                         socket.setKeepAlive(true);
                         socket.setSoTimeout(1000);
                         FrontendConnection connection = FrontendConnectionFactory
                                 .makeConnection(client);
                         connection.register(selector);
                     } else if (key != null && key.isReadable()) {
-                        SocketChannel channel = (SocketChannel) key.channel();
                         FrontendConnection connection = (FrontendConnection) key.attachment();
                         connection.read();
                     } else if (key != null && key.isWritable()) {
                         System.out.println("write");
-
                     }
 
+                    key.cancel();
                     keySet.clear();
                 }
             }
@@ -68,7 +67,6 @@ public class MysqlServer {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
 
     }
 

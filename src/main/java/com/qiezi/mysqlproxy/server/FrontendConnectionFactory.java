@@ -11,7 +11,8 @@ public class FrontendConnectionFactory {
         if (!connectionMap.containsKey(socketChannel)) {
             synchronized (FrontendConnectionFactory.class) {
                 if (!connectionMap.containsKey(socketChannel)) {
-                    connectionMap.putIfAbsent(socketChannel, new FrontendConnection(socketChannel));
+                    connectionMap.putIfAbsent(socketChannel,
+                            new FrontendConnection(socketChannel));
                 }
             }
         }

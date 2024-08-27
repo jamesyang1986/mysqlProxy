@@ -50,8 +50,9 @@ public class BackendConnection {
         packet.command = MySQLPacket.COM_QUERY;
         try {
             packet.arg = sql.getBytes("utf-8");
-            packet.write(PacketOutputProxyFactory.createProxy(out));
+            packet.write(new PacketStreamOutputProxy(out));
             BinaryPacket bin = receive();
+            System.out.println(bin.packetId);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -170,7 +171,7 @@ public class BackendConnection {
     }
 
     public static void main(String[] args) {
-        BackendConnection connection = new BackendConnection("127.0.0.1", 3307, "root", "123qweasd");
+        BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "root", "123qweasd");
         connection.executeSql(" show databases; ");
 
     }

@@ -160,7 +160,7 @@ public class PacketStreamOutputProxy extends PacketOutputProxyCommon {
 
     @Override
     public void writeWithNull(byte[] src) {
-//        write(src);
+        write(src);
         waitForCompressStream.write((byte) 0);
     }
 
@@ -205,9 +205,14 @@ public class PacketStreamOutputProxy extends PacketOutputProxyCommon {
     public void packetEnd() {
         try {
             if (this.connection != null) {
-                this.connection.getChannel().write(ByteBuffer.wrap(getData()));
+                byte[] data = getData();
+                int writen = this.connection.getChannel().write(ByteBuffer.wrap(data));
+                if (writen < data.length) {
+                    System.out.println("write fail..");
+                }
             } else if (out != null) {
                 out.write(getData());
+                out.flush();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
