@@ -18,9 +18,9 @@ public class AuthHandler implements Handler {
         authPacket.read(data);
         try {
             this.source.getChannel().write(ByteBuffer.wrap(AUTH_OK));
+            source.setAuth(true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        source.setHandler(new CommandHandler(source));
     }
 }

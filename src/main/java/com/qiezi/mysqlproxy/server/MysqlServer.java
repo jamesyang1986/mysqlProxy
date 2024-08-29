@@ -40,8 +40,8 @@ public class MysqlServer {
                     SelectionKey key = it.next();
                     it.remove();
                     if (key != null && key.isAcceptable()) {
-                        ServerSocketChannel aa = (ServerSocketChannel) key.channel();
-                        SocketChannel client = aa.accept();
+                        ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
+                        SocketChannel client = serverChannel.accept();
                         client.configureBlocking(false);
                         Socket socket = client.socket();
                         socket.setTcpNoDelay(true);
@@ -58,8 +58,6 @@ public class MysqlServer {
                     } else if (key != null && key.isWritable()) {
                         System.out.println("write");
                     }
-
-                    key.cancel();
                     keySet.clear();
                 }
             }
@@ -71,7 +69,6 @@ public class MysqlServer {
     }
 
     public void shutDown() {
-
 
     }
 

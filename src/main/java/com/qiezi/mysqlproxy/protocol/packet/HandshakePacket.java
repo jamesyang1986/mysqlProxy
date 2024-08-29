@@ -19,6 +19,8 @@ public class HandshakePacket extends MySQLPacket {
     public byte[] restOfScrambleBuff;
 
     public static final String authMethod = "mysql_native_password";
+//    public static final String authMethod = "mysql_native_password";
+
 
     public void read(BinaryPacket bin) {
         packetLength = bin.packetLength;

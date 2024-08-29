@@ -2,7 +2,6 @@ package com.qiezi.mysqlproxy.server;
 
 import com.qiezi.mysqlproxy.model.EndPoint;
 import com.qiezi.mysqlproxy.protocol.Capabilities;
-import com.qiezi.mysqlproxy.protocol.PacketOutputProxyFactory;
 import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
 import com.qiezi.mysqlproxy.protocol.packet.*;
 import com.qiezi.mysqlproxy.utils.SecurityUtil;
@@ -10,7 +9,6 @@ import com.qiezi.mysqlproxy.utils.SecurityUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 
@@ -20,6 +18,8 @@ public class BackendConnection {
     private int connectTimeOut = 1000;
 
     private int readWriteTimeOut = 1000;
+
+    private Socket socket;
 
     private InputStream in;
     private OutputStream out;
@@ -33,20 +33,21 @@ public class BackendConnection {
     private int charsetIndex = 33;
 
     private boolean isAuth = false;
+
+    private byte packetId = (byte)0xff;
     private static final long MAX_PACKET_SIZE = 1024 * 1024 * 16;
 
     public BackendConnection(String host, int port, String userName, String password) {
         this.target = new EndPoint(host, port);
         this.userName = userName;
         this.password = password;
+        connect();
         handshake();
     }
 
     public void executeSql(String sql) {
-
-        // 生成执行数据包
         CommandPacket packet = new CommandPacket();
-        packet.packetId = 0;
+        packet.packetId = packetId++;
         packet.command = MySQLPacket.COM_QUERY;
         try {
             packet.arg = sql.getBytes("utf-8");
@@ -60,9 +61,6 @@ public class BackendConnection {
 
     public void handshake() {
         try {
-            Socket socket = new Socket(this.target.getHost(), this.target.getPort());
-            this.in = socket.getInputStream();
-            this.out = socket.getOutputStream();
             BinaryPacket bin = new BinaryPacket();
             bin.read(this.in);
             HandshakePacket hsp = new HandshakePacket();
@@ -94,13 +92,24 @@ public class BackendConnection {
         }
     }
 
+
+    private void connect() {
+        try {
+            this.socket = new Socket(this.target.getHost(), this.target.getPort());
+            this.in = socket.getInputStream();
+            this.out = socket.getOutputStream();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void afterSuccess() {
         isAuth = true;
     }
 
     private BinaryPacket sendAuth411(HandshakePacket hsp) throws IOException, NoSuchAlgorithmException {
         AuthPacket ap = new AuthPacket();
-        ap.packetId = 1;
+        ap.packetId = packetId++;
         ap.clientFlags = getClientFlags();
         ap.maxPacketSize = MAX_PACKET_SIZE;
         ap.charsetIndex = charsetIndex;
@@ -171,8 +180,7 @@ public class BackendConnection {
     }
 
     public static void main(String[] args) {
-        BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "root", "123qweasd");
-        connection.executeSql(" show databases; ");
-
+        BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "yang", "yang");
+        connection.executeSql(" select * from yshop.yx_user ");
     }
 }

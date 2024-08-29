@@ -1,7 +1,6 @@
 package com.qiezi.mysqlproxy.server;
 
 import com.qiezi.mysqlproxy.protocol.Capabilities;
-import com.qiezi.mysqlproxy.protocol.PacketOutputProxyFactory;
 import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
 import com.qiezi.mysqlproxy.protocol.packet.HandshakePacket;
 import com.qiezi.mysqlproxy.utils.RandomUtil;
@@ -19,7 +18,9 @@ public class FrontendConnection {
     private boolean isSsl = false;
     private boolean isAuth = false;
     private boolean readHeader = true;
-    private Handler handler;
+    private Handler authHandler;
+
+    private Handler queryHandler;
 
     private byte[] seed;
 
@@ -27,9 +28,11 @@ public class FrontendConnection {
 
     private static ByteBuffer header = ByteBuffer.allocate(4);
 
+
     public FrontendConnection(SocketChannel channel) {
         this.channel = channel;
-        this.handler = new AuthHandler(this);
+        this.authHandler = new AuthHandler(this);
+        this.queryHandler = new CommandHandler(this);
     }
 
     public void register(Selector selector) {
@@ -68,7 +71,12 @@ public class FrontendConnection {
     }
 
     private void handleData(byte[] data) {
-        this.handler.handleData(data);
+        if (!isAuth) {
+            this.authHandler.handleData(data);
+            return;
+        }
+
+        this.queryHandler.handleData(data);
     }
 
     private void handshake() {
@@ -91,7 +99,6 @@ public class FrontendConnection {
         hs.threadId = Thread.currentThread().getId();
         hs.seed = rand1;
         hs.serverCapabilities = getServerCapabilities();
-
         hs.serverStatus = 2;
         hs.restOfScrambleBuff = rand2;
 
@@ -99,7 +106,6 @@ public class FrontendConnection {
 //            hs.serverCapabilities |= Capabilities.CLIENT_SSL;
 //        }
         hs.serverCharsetIndex = (byte) (33 & 0xff);
-
 
         try {
             hs.write(new PacketStreamOutputProxy(this));
@@ -151,11 +157,19 @@ public class FrontendConnection {
         this.channel = channel;
     }
 
-    public Handler getHandler() {
-        return handler;
+    public Handler getAuthHandler() {
+        return authHandler;
     }
 
-    public void setHandler(Handler handler) {
-        this.handler = handler;
+    public void setAuthHandler(Handler authHandler) {
+        this.authHandler = authHandler;
+    }
+
+    public boolean isAuth() {
+        return isAuth;
+    }
+
+    public void setAuth(boolean auth) {
+        isAuth = auth;
     }
 }

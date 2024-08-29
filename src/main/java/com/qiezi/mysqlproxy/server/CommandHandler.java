@@ -1,5 +1,7 @@
 package com.qiezi.mysqlproxy.server;
 
+import static com.qiezi.mysqlproxy.protocol.packet.MySQLPacket.COM_QUERY;
+
 public class CommandHandler implements Handler {
     private FrontendConnection source;
 
@@ -11,7 +13,8 @@ public class CommandHandler implements Handler {
     public void handleData(byte[] data) {
         byte cmdType = data[0];
         switch (cmdType) {
-            case 1:
+            case COM_QUERY:
+                System.out.println(" this is query request.");
                 break;
             default:
                 break;
