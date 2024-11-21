@@ -34,7 +34,7 @@ public class BackendConnection {
 
     private boolean isAuth = false;
 
-    private byte packetId = (byte)0xff;
+    private byte packetId = (byte) 0xff;
     private static final long MAX_PACKET_SIZE = 1024 * 1024 * 16;
 
     public BackendConnection(String host, int port, String userName, String password) {
@@ -47,7 +47,7 @@ public class BackendConnection {
 
     public void executeSql(String sql) {
         CommandPacket packet = new CommandPacket();
-        packet.packetId = packetId++;
+        packet.packetId = this.packetId++;
         packet.command = MySQLPacket.COM_QUERY;
         try {
             packet.arg = sql.getBytes("utf-8");
@@ -65,6 +65,10 @@ public class BackendConnection {
             bin.read(this.in);
             HandshakePacket hsp = new HandshakePacket();
             hsp.read(bin);
+
+            this.packetId = hsp.packetId;
+            this.packetId++;
+
 
             this.threadId = hsp.threadId;
             // 发送认证数据包
@@ -109,7 +113,7 @@ public class BackendConnection {
 
     private BinaryPacket sendAuth411(HandshakePacket hsp) throws IOException, NoSuchAlgorithmException {
         AuthPacket ap = new AuthPacket();
-        ap.packetId = packetId++;
+        ap.packetId = this.packetId++;
         ap.clientFlags = getClientFlags();
         ap.maxPacketSize = MAX_PACKET_SIZE;
         ap.charsetIndex = charsetIndex;
@@ -180,7 +184,7 @@ public class BackendConnection {
     }
 
     public static void main(String[] args) {
-        BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "yang", "yang");
-        connection.executeSql(" select * from yshop.yx_user ");
+        BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "root", "taotaoJJ1986@");
+        connection.executeSql(" select * from test.cc ");
     }
 }
