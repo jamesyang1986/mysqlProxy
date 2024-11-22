@@ -5,14 +5,16 @@ import com.qiezi.mysqlproxy.protocol.Capabilities;
 import com.qiezi.mysqlproxy.protocol.MySQLMessage;
 import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
 import com.qiezi.mysqlproxy.protocol.packet.*;
-import com.qiezi.mysqlproxy.utils.BufferUtil;
 import com.qiezi.mysqlproxy.utils.SecurityUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -56,52 +58,67 @@ public class BackendConnection {
         try {
             packet.arg = sql.getBytes("utf-8");
             packet.write(new PacketStreamOutputProxy(out));
-            BinaryPacket bin = receive();
 
-            MySQLMessage message = new MySQLMessage(bin.data);
-
-            switch (bin.data[0]) {
-                case OkPacket.OK_HEADER:
-                    OkPacket okPacket = new OkPacket();
-                    okPacket.read(bin);
-                    break;
-                case ErrorPacket.ERROR_HEADER:
-                    ErrorPacket err = new ErrorPacket();
-                    err.read(bin);
-                    throw new RuntimeException(new String(err.message, "utf-8"));
-            }
-
-            int count = BufferUtil.getLength(bin.data);
-
-            Map<String, FieldPacket> fieldPacketMap = new ConcurrentHashMap<>();
-
-            while (true) {
-                bin = receive();
-                if (bin.data[0] == 0xfe && bin.packetLength <= 5) {
-                    break;
-                }
-
-                FieldPacket fieldPacket = new FieldPacket();
-                fieldPacket.read(bin.data);
-                fieldPacketMap.put(new String(fieldPacket.getName()), fieldPacket);
-            }
-
-            RowDataPacket dataPacket = null;
-            while (true) {
-                bin = receive();
-                if (bin.data[0] == 0xfe && bin.packetLength <= 5) {
-                    break;
-                }
-
-                dataPacket = new RowDataPacket(fieldPacketMap.size());
-                dataPacket.read(bin.data);
-            }
-
-
-
-            System.out.println(bin.packetId);
+            readResult();
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+
+    private void readResult() throws Exception {
+        BinaryPacket bin = receive();
+        MySQLMessage message = new MySQLMessage(bin.data);
+        switch (bin.data[0]) {
+            case OkPacket.OK_HEADER:
+                OkPacket okPacket = new OkPacket();
+                okPacket.read(bin);
+                return;
+            case ErrorPacket.ERROR_HEADER:
+                ErrorPacket err = new ErrorPacket();
+                err.read(bin);
+                throw new RuntimeException(new String(err.message, "utf-8"));
+        }
+
+        long count = message.readLength();
+        Map<String, FieldPacket> fieldPacketMap = new ConcurrentHashMap<>();
+        List<FieldPacket> fieldPacketList = new ArrayList<>();
+
+        int i = 0;
+        while (true) {
+            bin = receive();
+            if ((bin.data[0] & 0xfe) == 0xfe) {
+                break;
+            }
+
+            FieldPacket fieldPacket = new FieldPacket();
+            fieldPacket.read(bin.data);
+            fieldPacketList.add(fieldPacket);
+            i++;
+        }
+
+        List<RowDataPacket> dataPackets = new ArrayList<>();
+        while (true) {
+            RowDataPacket dataPacket = null;
+            bin = receive();
+            if ((bin.data[0] & 0xfe) == 0xfe && bin.packetLength <= 5) {
+                break;
+            }
+
+            dataPacket = new RowDataPacket((int) count);
+            dataPacket.read(bin.data);
+            dataPackets.add(dataPacket);
+        }
+
+
+        for (RowDataPacket dataPacket : dataPackets) {
+            System.out.println("-------row--------");
+            StringBuilder sb = new StringBuilder("");
+            for (byte[] cc : dataPacket.fieldValues) {
+                sb.append(new String(cc));
+                sb.append("----");
+            }
+            System.out.println(sb.toString());
         }
     }
 
@@ -124,6 +141,7 @@ public class BackendConnection {
             } catch (NoSuchAlgorithmException e) {
                 throw new IllegalArgumentException(e.getMessage());
             }
+
             if (res == null) {
                 return;
             }
@@ -233,7 +251,26 @@ public class BackendConnection {
         this.password = password;
     }
 
+
+    public static String bytesToHexString(byte[] byteArray) {
+        StringBuilder builder = new StringBuilder();
+        if (byteArray == null || byteArray.length <= 0) {
+            return null;
+        }
+        String hv;
+        for (int i = 0; i < byteArray.length; i++) {
+            // 以十六进制（基数 16）无符号整数形式返回一个整数参数的字符串表示形式，并转换为大写
+            hv = Integer.toHexString(byteArray[i] & 0xFF);
+            if (hv.length() < 2) {
+                builder.append(0);
+            }
+            builder.append(hv);
+        }
+        return builder.toString();
+    }
+
     public static void main(String[] args) {
+        System.out.println(Integer.toHexString(-2 & 0xff));
         BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "root", "taotaoJJ1986@");
         connection.executeSql(" select * from test.cc ");
     }

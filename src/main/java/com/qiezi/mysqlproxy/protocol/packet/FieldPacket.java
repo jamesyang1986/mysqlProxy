@@ -32,14 +32,15 @@ public class FieldPacket extends MySQLPacket {
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
-        this.packetLength = mm.readUB3();
-        this.packetId = mm.read();
+        this.packetLength = mm.length();
+//        this.packetId = mm.read();
         this.catalog = mm.readBytesWithLength();
         this.db = mm.readBytesWithLength();
         this.table = mm.readBytesWithLength();
         this.orgTable = mm.readBytesWithLength();
         this.name = mm.readBytesWithLength();
         this.orgName = mm.readBytesWithLength();
+
         mm.move(1);
         this.charsetIndex = mm.readUB2();
         this.length = mm.readUB4();

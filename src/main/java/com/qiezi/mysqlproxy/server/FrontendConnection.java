@@ -122,7 +122,7 @@ public class FrontendConnection {
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
         flag |= Capabilities.CLIENT_FOUND_ROWS;
         flag |= Capabilities.CLIENT_LONG_FLAG;
-        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+//        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
         // flag |= Capabilities.CLIENT_NO_SCHEMA;
         flag |= Capabilities.CLIENT_COMPRESS;
         flag |= Capabilities.CLIENT_ODBC;
