@@ -30,8 +30,10 @@ public class FrontendConnection {
 
     private static ByteBuffer header = ByteBuffer.allocate(4);
 
+    private MysqlServer server;
 
-    public FrontendConnection(SocketChannel channel) {
+
+    public FrontendConnection(SocketChannel channel, MysqlServer server) {
         this.channel = channel;
         this.authHandler = new AuthHandler(this);
         this.queryHandler = new CommandHandler(this);
@@ -60,6 +62,8 @@ public class FrontendConnection {
             if (len == PACKET_MAX_LEN) {
 
             }
+
+
             ByteBuffer body = ByteBuffer.allocate(len);
             this.channel.read(body);
             byte[] data = body.array();
@@ -177,5 +181,9 @@ public class FrontendConnection {
 
     public boolean isEofDeprecated() {
         return (clientFlags & Capabilities.CLIENT_DEPRECATE_EOF) > 0;
+    }
+
+    public MysqlServer getServer() {
+        return server;
     }
 }

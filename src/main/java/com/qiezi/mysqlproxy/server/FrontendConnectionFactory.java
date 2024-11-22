@@ -7,12 +7,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FrontendConnectionFactory {
     private static Map<SocketChannel, FrontendConnection> connectionMap = new ConcurrentHashMap<>();
 
-    public static FrontendConnection makeConnection(SocketChannel socketChannel) {
+    public static FrontendConnection makeConnection(SocketChannel socketChannel, MysqlServer server) {
         if (!connectionMap.containsKey(socketChannel)) {
             synchronized (FrontendConnectionFactory.class) {
                 if (!connectionMap.containsKey(socketChannel)) {
                     connectionMap.putIfAbsent(socketChannel,
-                            new FrontendConnection(socketChannel));
+                            new FrontendConnection(socketChannel, server));
                 }
             }
         }

@@ -16,9 +16,11 @@ public class MysqlServer {
     private ServerConfig serverConfig;
 
     private Selector selector;
+    private BackendConnection backendConn;
 
     public MysqlServer(ServerConfig serverConfig) {
         this.serverConfig = serverConfig;
+        this.backendConn = new BackendConnection("127.0.0.1", 3306, "root", "taotaoJJ1986@");
     }
 
     public void start() {
@@ -50,7 +52,7 @@ public class MysqlServer {
                         socket.setKeepAlive(true);
                         socket.setSoTimeout(1000);
                         FrontendConnection connection = FrontendConnectionFactory
-                                .makeConnection(client);
+                                .makeConnection(client, this);
                         connection.register(selector);
                     } else if (key != null && key.isReadable()) {
                         FrontendConnection connection = (FrontendConnection) key.attachment();
@@ -81,5 +83,9 @@ public class MysqlServer {
         MysqlServer server = new MysqlServer(config);
         server.start();
 
+    }
+
+    public BackendConnection getBackendConn() {
+        return backendConn;
     }
 }

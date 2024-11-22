@@ -10,7 +10,6 @@ import com.qiezi.mysqlproxy.utils.SecurityUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -59,21 +58,21 @@ public class BackendConnection {
             packet.arg = sql.getBytes("utf-8");
             packet.write(new PacketStreamOutputProxy(out));
 
-            readResult();
+            readRsHeaderResult();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
 
-    private void readResult() throws Exception {
+    public MysqlResultSetPacket readRsHeaderResult() throws Exception {
         BinaryPacket bin = receive();
         MySQLMessage message = new MySQLMessage(bin.data);
         switch (bin.data[0]) {
             case OkPacket.OK_HEADER:
                 OkPacket okPacket = new OkPacket();
                 okPacket.read(bin);
-                return;
+                return null;
             case ErrorPacket.ERROR_HEADER:
                 ErrorPacket err = new ErrorPacket();
                 err.read(bin);
@@ -83,6 +82,8 @@ public class BackendConnection {
         long count = message.readLength();
         Map<String, FieldPacket> fieldPacketMap = new ConcurrentHashMap<>();
         List<FieldPacket> fieldPacketList = new ArrayList<>();
+
+        ResultSetHeaderPacket resultSetHeaderPacket = new ResultSetHeaderPacket((int) count);
 
         int i = 0;
         while (true) {
@@ -97,10 +98,18 @@ public class BackendConnection {
             i++;
         }
 
+        MysqlResultSetPacket mysqlResultSetPacket = new MysqlResultSetPacket(resultSetHeaderPacket,
+                fieldPacketList.toArray(fieldPacketList.toArray(new FieldPacket[0])));
+
+        return mysqlResultSetPacket;
+
+    }
+
+    public List<RowDataPacket> readRowDataResult(int count) throws Exception {
         List<RowDataPacket> dataPackets = new ArrayList<>();
         while (true) {
             RowDataPacket dataPacket = null;
-            bin = receive();
+            BinaryPacket bin = receive();
             if ((bin.data[0] & 0xff) == 0xfe && bin.packetLength <= 5) {
                 break;
             }
@@ -111,15 +120,7 @@ public class BackendConnection {
         }
 
 
-        for (RowDataPacket dataPacket : dataPackets) {
-            System.out.println("-------row--------");
-            StringBuilder sb = new StringBuilder("");
-            for (byte[] cc : dataPacket.fieldValues) {
-                sb.append(new String(cc));
-                sb.append("----");
-            }
-            System.out.println(sb.toString());
-        }
+        return dataPackets;
     }
 
     public void handshake() {

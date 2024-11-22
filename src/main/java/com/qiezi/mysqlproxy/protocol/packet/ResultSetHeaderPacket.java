@@ -11,6 +11,10 @@ public class ResultSetHeaderPacket extends MySQLPacket {
 
     public int fieldCount;
 
+    public ResultSetHeaderPacket(int fieldCount) {
+        this.fieldCount = fieldCount;
+    }
+
     public IPacketOutputProxy write(IPacketOutputProxy proxy) {
         proxy.packetBegin();
 
@@ -34,4 +38,7 @@ public class ResultSetHeaderPacket extends MySQLPacket {
         return "MySQL ResultSetHeader Packet";
     }
 
+    public int getFieldCount() {
+        return fieldCount;
+    }
 }
