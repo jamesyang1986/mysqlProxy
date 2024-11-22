@@ -10,11 +10,7 @@ public interface IPacketOutputProxy {
 
     FrontendConnection getConnection();
 
-    /**
-     * 所有写操作都假设不会换buffer或outputstream 之所以将所有的写接口没有放到额外的写工具中，是为了使用者不需要判断当前
-     * 是具体的ByteBuffer形式还是OutputStream形式
-     * 前面都是针对当前buffer或stream的数据填充，后面的writeBuffer才是真正输出buffer 到网络或者待压缩队列中
-     */
+
     void write(byte b);
 
     void writeUB2(int i);

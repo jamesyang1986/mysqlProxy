@@ -2,8 +2,10 @@ package com.qiezi.mysqlproxy.server;
 
 import com.qiezi.mysqlproxy.model.EndPoint;
 import com.qiezi.mysqlproxy.protocol.Capabilities;
+import com.qiezi.mysqlproxy.protocol.MySQLMessage;
 import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
 import com.qiezi.mysqlproxy.protocol.packet.*;
+import com.qiezi.mysqlproxy.utils.BufferUtil;
 import com.qiezi.mysqlproxy.utils.SecurityUtil;
 
 import java.io.IOException;
@@ -11,6 +13,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BackendConnection {
     private EndPoint target;
@@ -47,12 +51,54 @@ public class BackendConnection {
 
     public void executeSql(String sql) {
         CommandPacket packet = new CommandPacket();
-        packet.packetId = this.packetId++;
+        packet.packetId = 0;
         packet.command = MySQLPacket.COM_QUERY;
         try {
             packet.arg = sql.getBytes("utf-8");
             packet.write(new PacketStreamOutputProxy(out));
             BinaryPacket bin = receive();
+
+            MySQLMessage message = new MySQLMessage(bin.data);
+
+            switch (bin.data[0]) {
+                case OkPacket.OK_HEADER:
+                    OkPacket okPacket = new OkPacket();
+                    okPacket.read(bin);
+                    break;
+                case ErrorPacket.ERROR_HEADER:
+                    ErrorPacket err = new ErrorPacket();
+                    err.read(bin);
+                    throw new RuntimeException(new String(err.message, "utf-8"));
+            }
+
+            int count = BufferUtil.getLength(bin.data);
+
+            Map<String, FieldPacket> fieldPacketMap = new ConcurrentHashMap<>();
+
+            while (true) {
+                bin = receive();
+                if (bin.data[0] == 0xfe && bin.packetLength <= 5) {
+                    break;
+                }
+
+                FieldPacket fieldPacket = new FieldPacket();
+                fieldPacket.read(bin.data);
+                fieldPacketMap.put(new String(fieldPacket.getName()), fieldPacket);
+            }
+
+            RowDataPacket dataPacket = null;
+            while (true) {
+                bin = receive();
+                if (bin.data[0] == 0xfe && bin.packetLength <= 5) {
+                    break;
+                }
+
+                dataPacket = new RowDataPacket(fieldPacketMap.size());
+                dataPacket.read(bin.data);
+            }
+
+
+
             System.out.println(bin.packetId);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -78,6 +124,10 @@ public class BackendConnection {
             } catch (NoSuchAlgorithmException e) {
                 throw new IllegalArgumentException(e.getMessage());
             }
+            if (res == null) {
+                return;
+            }
+
             switch (res.data[0]) {
                 case OkPacket.OK_HEADER:
                     afterSuccess();

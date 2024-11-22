@@ -22,6 +22,8 @@ public class FrontendConnection {
 
     private Handler queryHandler;
 
+    protected long clientFlags = 0;
+
     private byte[] seed;
 
     private static final int PACKET_MAX_LEN = ((0xff << 16) | (0xff << 8) | 0xff);
@@ -171,5 +173,9 @@ public class FrontendConnection {
 
     public void setAuth(boolean auth) {
         isAuth = auth;
+    }
+
+    public boolean isEofDeprecated() {
+        return (clientFlags & Capabilities.CLIENT_DEPRECATE_EOF) > 0;
     }
 }
