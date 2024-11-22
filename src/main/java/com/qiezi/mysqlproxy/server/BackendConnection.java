@@ -87,7 +87,7 @@ public class BackendConnection {
         int i = 0;
         while (true) {
             bin = receive();
-            if ((bin.data[0] & 0xfe) == 0xfe) {
+            if ((bin.data[0] & 0xff) == 0xfe) {
                 break;
             }
 
@@ -101,7 +101,7 @@ public class BackendConnection {
         while (true) {
             RowDataPacket dataPacket = null;
             bin = receive();
-            if ((bin.data[0] & 0xfe) == 0xfe && bin.packetLength <= 5) {
+            if ((bin.data[0] & 0xff) == 0xfe && bin.packetLength <= 5) {
                 break;
             }
 
