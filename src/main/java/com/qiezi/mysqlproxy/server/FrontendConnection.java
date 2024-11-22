@@ -24,6 +24,8 @@ public class FrontendConnection {
 
     protected long clientFlags = 0;
 
+    public byte packetId = 0x00;
+
     private byte[] seed;
 
     private static final int PACKET_MAX_LEN = ((0xff << 16) | (0xff << 8) | 0xff);
@@ -37,6 +39,7 @@ public class FrontendConnection {
         this.channel = channel;
         this.authHandler = new AuthHandler(this);
         this.queryHandler = new CommandHandler(this);
+        this.server = server;
     }
 
     public void register(Selector selector) {
@@ -99,7 +102,7 @@ public class FrontendConnection {
 
         // 发送握手数据包
         HandshakePacket hs = new HandshakePacket();
-        hs.packetId = 0;
+        hs.packetId = this.packetId++;
         hs.protocolVersion = Versions.PROTOCOL_VERSION;
         hs.serverVersion = Versions.VERSION_PREFIX_5.getBytes();
         hs.threadId = Thread.currentThread().getId();
@@ -185,5 +188,9 @@ public class FrontendConnection {
 
     public MysqlServer getServer() {
         return server;
+    }
+
+    public byte getPacketId() {
+        return packetId;
     }
 }

@@ -57,8 +57,7 @@ public class BackendConnection {
         try {
             packet.arg = sql.getBytes("utf-8");
             packet.write(new PacketStreamOutputProxy(out));
-
-            readRsHeaderResult();
+//            readRsHeaderResult();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -274,5 +273,23 @@ public class BackendConnection {
         System.out.println(Integer.toHexString(-2 & 0xff));
         BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "root", "taotaoJJ1986@");
         connection.executeSql(" select * from test.cc ");
+        MysqlResultSetPacket mysqlResultSetPacket = null;
+        try {
+            mysqlResultSetPacket = connection.readRsHeaderResult();
+            List<RowDataPacket> rowDataPackets = connection.readRowDataResult(mysqlResultSetPacket.getResultHead().getFieldCount());
+
+            for (RowDataPacket dataPacket : rowDataPackets) {
+                System.out.println("-------row--------");
+                StringBuilder sb = new StringBuilder("");
+                for (byte[] cc : dataPacket.fieldValues) {
+                    sb.append(new String(cc));
+                    sb.append("----");
+                }
+                System.out.println(sb.toString());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }

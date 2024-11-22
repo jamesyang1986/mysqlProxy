@@ -1,10 +1,7 @@
 package com.qiezi.mysqlproxy.server;
 
 import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
-import com.qiezi.mysqlproxy.protocol.packet.EOFPacket;
-import com.qiezi.mysqlproxy.protocol.packet.FieldPacket;
-import com.qiezi.mysqlproxy.protocol.packet.MysqlResultSetPacket;
-import com.qiezi.mysqlproxy.protocol.packet.RowDataPacket;
+import com.qiezi.mysqlproxy.protocol.packet.*;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
@@ -29,7 +26,8 @@ public class CommandHandler implements Handler {
                     String sql = new String(data, "utf-8");
                     System.out.println("query sql:" + sql);
                     BackendConnection conn = this.source.getServer().getBackendConn();
-                    conn.executeSql(sql);
+                    String sql2 = " select * from test.cc ";
+                    conn.executeSql(sql2);
                     MysqlResultSetPacket mysqlResultSetPacket = conn.readRsHeaderResult();
                     List<RowDataPacket> rowDataPackets = conn.readRowDataResult(mysqlResultSetPacket.getResultHead().getFieldCount());
 
@@ -44,27 +42,28 @@ public class CommandHandler implements Handler {
                     }
 
 
-                    byte packetId = (byte) 0;
                     if (mysqlResultSetPacket != null) {
-                        mysqlResultSetPacket.packetId = packetId++;
+                        ResultSetHeaderPacket headerPacket = mysqlResultSetPacket.getResultHead();
+                        headerPacket.packetId = this.source.packetId++;
+                        ;
                         mysqlResultSetPacket.getResultHead().write(proxy);
                     }
 
                     for (FieldPacket fieldPacket : mysqlResultSetPacket.getFieldPackets()) {
-                        fieldPacket.packetId = packetId++;
+                        fieldPacket.packetId = this.source.packetId++;
                         fieldPacket.write(proxy);
                     }
                     EOFPacket eofPacket = new EOFPacket();
-                    eofPacket.packetId = packetId++;
+                    eofPacket.packetId = this.source.packetId++;
                     eofPacket.write(proxy);
 
                     for (RowDataPacket dataPacket : rowDataPackets) {
-                        dataPacket.packetId = packetId++;
+                        dataPacket.packetId = this.source.packetId++;
                         dataPacket.write(proxy);
                     }
 
                     eofPacket = new EOFPacket();
-                    eofPacket.packetId = packetId++;
+                    eofPacket.packetId = this.source.packetId++;
                     eofPacket.write(proxy);
 
                 } catch (Exception e) {
