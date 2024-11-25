@@ -193,4 +193,8 @@ public class FrontendConnection {
     public byte getPacketId() {
         return packetId;
     }
+
+    public byte getPacketIdAndIncr() {
+        return packetId++;
+    }
 }

@@ -1,5 +1,7 @@
 package com.qiezi.mysqlproxy.utils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public class BufferUtil {
@@ -115,6 +117,39 @@ public class BufferUtil {
             return 4 + length;
         } else {
             return 9 + length;
+        }
+    }
+
+    public static byte[] receiveRawData(InputStream in) {
+        try {
+            int packetLength = StreamUtil.readUB3(in);
+            byte packetId = StreamUtil.read(in);
+            byte[] ab = new byte[4 + packetLength];
+            StreamUtil.read(in, ab, 4, packetLength);
+            ab[0] = (byte) (packetLength & 0xff);
+            ab[1] = (byte) (packetLength >>> 8);
+            ab[2] = (byte) (packetLength >>> 16);
+            ab[3] = packetId;
+            return ab;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static byte[] convertRawData(byte[] src) {
+        try {
+            int packetLength = src.length;
+            byte[] ab = new byte[4 + packetLength];
+            System.arraycopy(src, 0, ab, 4, packetLength);
+            ab[0] = (byte) (packetLength & 0xff);
+            ab[1] = (byte) (packetLength >>> 8);
+            ab[2] = (byte) (packetLength >>> 16);
+            ab[3] = 0x00;
+            return ab;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

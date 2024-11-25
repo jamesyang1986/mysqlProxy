@@ -17,6 +17,7 @@ public class BinaryPacket extends MySQLPacket {
     public static final byte PACKET_EOF = 7;
     public static final byte LOCAL_INFILE = -5;
     public byte[] data;
+    private byte[] rawData;
 
     public void read(InputStream in) throws IOException {
         packetLength = StreamUtil.readUB3(in);
@@ -24,6 +25,18 @@ public class BinaryPacket extends MySQLPacket {
         byte[] ab = new byte[packetLength];
         StreamUtil.read(in, ab, 0, ab.length);
         data = ab;
+
+        genRawData(ab);
+    }
+
+    private void genRawData(byte[] ab) {
+        byte[] src = new byte[4 + packetLength];
+        System.arraycopy(ab, 0, src, 4, packetLength);
+        src[0] = (byte) (packetLength & 0xff);
+        src[1] = (byte) (packetLength >>> 8);
+        src[2] = (byte) (packetLength >>> 16);
+        src[3] = packetId;
+        this.rawData = src;
     }
 
     public IPacketOutputProxy write(IPacketOutputProxy proxy) {
@@ -47,5 +60,8 @@ public class BinaryPacket extends MySQLPacket {
         return "MySQL Binary Packet";
     }
 
+    public byte[] getRawData() {
+        return rawData;
+    }
 }
 

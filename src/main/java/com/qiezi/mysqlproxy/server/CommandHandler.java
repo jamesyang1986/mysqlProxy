@@ -23,6 +23,7 @@ public class CommandHandler implements Handler {
         switch (cmdType) {
             case COM_QUERY:
                 try {
+                    this.source.packetId = 0x00;
                     String sql = new String(data, "utf-8");
                     System.out.println("query sql:" + sql);
                     BackendConnection conn = this.source.getServer().getBackendConn();
@@ -45,7 +46,6 @@ public class CommandHandler implements Handler {
                     if (mysqlResultSetPacket != null) {
                         ResultSetHeaderPacket headerPacket = mysqlResultSetPacket.getResultHead();
                         headerPacket.packetId = this.source.packetId++;
-                        ;
                         mysqlResultSetPacket.getResultHead().write(proxy);
                     }
 

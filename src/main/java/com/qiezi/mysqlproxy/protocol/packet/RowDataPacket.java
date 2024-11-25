@@ -37,8 +37,8 @@ public class RowDataPacket extends MySQLPacket {
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
-        packetLength = mm.length();
-//        packetId = mm.read();
+        packetLength = mm.readUB3();
+        packetId = mm.read();
         for (int i = 0; i < fieldCount; i++) {
             fieldValues.add(mm.readBytesWithLength());
         }

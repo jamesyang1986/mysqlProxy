@@ -11,7 +11,7 @@ import com.qiezi.mysqlproxy.utils.BufferUtil;
 public class FieldPacket extends MySQLPacket {
     public static final String DEFAULT_CATALOG_STR = "def";
     private static final byte[] DEFAULT_CATALOG = DEFAULT_CATALOG_STR.getBytes();
-    private static final byte[] FILLER = new byte[] {0, 0};
+    private static final byte[] FILLER = new byte[]{0, 0};
 
     public byte[] catalog = DEFAULT_CATALOG;
     public byte[] db;
@@ -32,8 +32,8 @@ public class FieldPacket extends MySQLPacket {
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
-        this.packetLength = mm.length();
-//        this.packetId = mm.read();
+        this.packetLength = mm.readUB3();
+        this.packetId = mm.read();
         this.catalog = mm.readBytesWithLength();
         this.db = mm.readBytesWithLength();
         this.table = mm.readBytesWithLength();

@@ -5,7 +5,9 @@ import com.qiezi.mysqlproxy.protocol.Capabilities;
 import com.qiezi.mysqlproxy.protocol.MySQLMessage;
 import com.qiezi.mysqlproxy.protocol.PacketStreamOutputProxy;
 import com.qiezi.mysqlproxy.protocol.packet.*;
+import com.qiezi.mysqlproxy.utils.BufferUtil;
 import com.qiezi.mysqlproxy.utils.SecurityUtil;
+import com.qiezi.mysqlproxy.utils.StreamUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,7 +94,7 @@ public class BackendConnection {
             }
 
             FieldPacket fieldPacket = new FieldPacket();
-            fieldPacket.read(bin.data);
+            fieldPacket.read(bin.getRawData());
             fieldPacketList.add(fieldPacket);
             i++;
         }
@@ -114,7 +116,7 @@ public class BackendConnection {
             }
 
             dataPacket = new RowDataPacket((int) count);
-            dataPacket.read(bin.data);
+            dataPacket.read(bin.getRawData());
             dataPackets.add(dataPacket);
         }
 
@@ -268,6 +270,8 @@ public class BackendConnection {
         }
         return builder.toString();
     }
+
+
 
     public static void main(String[] args) {
         System.out.println(Integer.toHexString(-2 & 0xff));
