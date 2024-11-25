@@ -197,4 +197,12 @@ public class FrontendConnection {
     public byte getPacketIdAndIncr() {
         return packetId++;
     }
+
+    public void close() {
+        try {
+            this.channel.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

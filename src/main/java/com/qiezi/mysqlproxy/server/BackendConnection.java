@@ -66,7 +66,7 @@ public class BackendConnection {
     }
 
 
-    public MysqlResultSetPacket readRsHeaderResult() throws Exception {
+    public MySQLPacket readRsHeaderResult() throws Exception {
         BinaryPacket bin = receive();
         MySQLMessage message = new MySQLMessage(bin.data);
         switch (bin.data[0]) {
@@ -272,14 +272,22 @@ public class BackendConnection {
     }
 
 
-
     public static void main(String[] args) {
         System.out.println(Integer.toHexString(-2 & 0xff));
         BackendConnection connection = new BackendConnection("127.0.0.1", 3306, "root", "taotaoJJ1986@");
         connection.executeSql(" select * from test.cc ");
         MysqlResultSetPacket mysqlResultSetPacket = null;
         try {
-            mysqlResultSetPacket = connection.readRsHeaderResult();
+            MySQLPacket packet = connection.readRsHeaderResult();
+            if (packet == null) {
+
+            }
+            if (packet instanceof OkPacket) {
+                OkPacket okPacket = (OkPacket) packet;
+            } else if (packet instanceof ErrorPacket) {
+                ErrorPacket errorPacket = (ErrorPacket) packet;
+
+            }
             List<RowDataPacket> rowDataPackets = connection.readRowDataResult(mysqlResultSetPacket.getResultHead().getFieldCount());
 
             for (RowDataPacket dataPacket : rowDataPackets) {
